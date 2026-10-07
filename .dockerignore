@@ -1,0 +1,7 @@
+venv/
+data/
+models/
+predictions/
+__pycache__/
+*.pyc
+.git/

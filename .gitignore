@@ -1,0 +1,8 @@
+@"
+venv/
+data/
+models/
+predictions/
+__pycache__/
+*.pyc
+"@ | Set-Content -Path .gitignore -Encoding utf8
