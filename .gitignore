@@ -1,8 +1,15 @@
-@"
 venv/
+.venv/
+.venv-test/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+.env
 data/
 models/
 predictions/
-__pycache__/
-*.pyc
-"@ | Set-Content -Path .gitignore -Encoding utf8
+*.pth
+*.onnx
+*.nii
+*.nii.gz
