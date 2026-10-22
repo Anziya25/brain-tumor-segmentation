@@ -1,8 +1,16 @@
 from monai.transforms import (
-    Compose, LoadImaged, EnsureChannelFirstd, Orientationd,
-    Spacingd, NormalizeIntensityd, ConcatItemsd, EnsureTyped
+    Compose,
+    ConcatItemsd,
+    EnsureChannelFirstd,
+    EnsureTyped,
+    LoadImaged,
+    NormalizeIntensityd,
+    Orientationd,
+    Spacingd,
 )
+
 from app.custom_transforms import PercentileClipd
+
 
 def get_preprocessing_transforms():
     return Compose([

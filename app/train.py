@@ -1,22 +1,28 @@
 import sys
 from pathlib import Path
+
 import torch
-from torch.optim import AdamW
-from torch.cuda.amp import autocast, GradScaler
-from monai.data import Dataset, DataLoader
-from monai.transforms import Compose, RandCropByPosNegLabeld, RandFlipd, RandShiftIntensityd
+from monai.data import DataLoader, Dataset
+from monai.inferers import sliding_window_inference
 from monai.losses import DiceLoss
 from monai.metrics import DiceMetric
-from monai.inferers import sliding_window_inference
+from monai.transforms import (
+    Compose,
+    RandCropByPosNegLabeld,
+    RandFlipd,
+    RandShiftIntensityd,
+)
+from torch.cuda.amp import GradScaler, autocast
+from torch.optim import AdamW
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
 sys.path.insert(0, str(MODEL_DIR))
 
-from inference import load_model
-from datalist import build_datalist
-from preprocessing import get_preprocessing_transforms
 from custom_transforms import ConvertToBratsMultiChanneld
+from datalist import build_datalist
+from inference import load_model
+from preprocessing import get_preprocessing_transforms
 
 # --- Config: START SMALL for the first run ---
 NUM_PATIENTS = 40       # smoke test; raise to 40+ once this works

@@ -3,10 +3,10 @@ import tempfile
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from app.inference_service import get_segmentation_service, SegmentationService
+from app.inference_service import SegmentationService, get_segmentation_service
 
 app = FastAPI(title="Brain Tumor MRI Segmentation API")
 
@@ -60,7 +60,7 @@ def predict(
                 paths["t1"], paths["t1ce"], paths["t2"], paths["flair"], str(output_mask_path)
             )
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Inference failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Inference failed: {e!s}")
 
     return PredictionResponse(
         enhancing_tumor_volume_ml=result["enhancing_tumor_volume_ml"],

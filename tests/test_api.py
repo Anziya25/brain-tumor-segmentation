@@ -7,6 +7,7 @@ sys.path.insert(0, str(PROJECT_ROOT))           # so "app.main" resolves as a pa
 sys.path.insert(0, str(PROJECT_ROOT / "app"))   # so inference_service.py's own bare imports (datalist, preprocessing) resolve
 
 from fastapi.testclient import TestClient
+
 from app.main import app, get_segmentation_service
 
 

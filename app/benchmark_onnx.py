@@ -1,9 +1,10 @@
 import sys
 import time
 from pathlib import Path
+
 import numpy as np
-import torch
 import onnxruntime as ort
+import torch
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"

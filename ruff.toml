@@ -1,0 +1,6 @@
+[lint]
+ignore = [
+    "B008",    # FastAPI's File(...) / Depends(...) in defaults is the standard pattern
+    "BLE001",  # deliberate catch-all so the API returns a 500 with a message
+    "RUF012",  # attribute on a test fake class
+]

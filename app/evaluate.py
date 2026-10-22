@@ -1,9 +1,10 @@
 import sys
 from pathlib import Path
+
 import torch
+from monai.data import DataLoader, Dataset
 from monai.inferers import sliding_window_inference
 from monai.metrics import DiceMetric, HausdorffDistanceMetric
-from monai.data import Dataset, DataLoader
 from monai.transforms import Compose
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -11,10 +12,10 @@ MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
 FT_CHECKPOINT_PATH = PROJECT_ROOT / "models" / "finetuned_unetr.pth"
 sys.path.insert(0, str(MODEL_DIR))
 
-from inference import load_model
-from datalist import build_datalist
-from preprocessing import get_preprocessing_transforms
 from custom_transforms import ConvertToBratsMultiChanneld
+from datalist import build_datalist
+from inference import load_model
+from preprocessing import get_preprocessing_transforms
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 PATCH_SIZE = (128, 128, 128)

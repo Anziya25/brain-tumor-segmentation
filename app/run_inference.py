@@ -1,13 +1,14 @@
 import sys
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
 sys.path.insert(0, str(MODEL_DIR))  # lets us import their inference.py
 
-from inference import load_model, predict  # from the downloaded repo
 from datalist import build_datalist
+from inference import load_model, predict  # from the downloaded repo
 from preprocessing import get_preprocessing_transforms
 
 # 1. Load the pretrained model — pass the exact weights file path,

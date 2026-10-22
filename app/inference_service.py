@@ -1,7 +1,9 @@
+import functools
 import sys
 from pathlib import Path
-import numpy as np
+
 import nibabel as nib
+import numpy as np
 import torch
 from monai.inferers import sliding_window_inference
 
@@ -10,14 +12,18 @@ MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
 FT_CHECKPOINT_PATH = PROJECT_ROOT / "models" / "finetuned_unetr.pth"
 sys.path.insert(0, str(MODEL_DIR))
 
-from inference import load_model
 from app.preprocessing import get_inference_transforms
 
 PATCH_SIZE = (128, 128, 128)
 VOXEL_VOLUME_ML = 1.0 / 1000  # 1mm^3 voxel after resampling = 0.001 mL
 
+
 class SegmentationService:
     def __init__(self):
+        # Lives in models/unetr-brats (downloaded, not in the repo), so it is
+        # imported here, only when a real model is actually loaded.
+        from inference import load_model
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model, self.metadata = load_model(str(MODEL_DIR / "pytorch_model.bin"))
         checkpoint = torch.load(FT_CHECKPOINT_PATH, map_location=self.device, weights_only=False)
@@ -57,12 +63,11 @@ class SegmentationService:
             "mask_path": str(output_mask_path),
         }
 
+
 # Lazy singleton: the model loads on first real use, not at import time.
-# This matters for testing — CI has no GPU and no model weights committed to
+# This matters for testing: CI has no GPU and no model weights committed to
 # the repo, so tests need to be able to swap this out entirely without ever
 # triggering a real load.
-import functools
-
 @functools.lru_cache(maxsize=1)
 def get_segmentation_service():
     return SegmentationService()

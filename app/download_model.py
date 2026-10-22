@@ -1,5 +1,6 @@
-from huggingface_hub import snapshot_download
 from pathlib import Path
+
+from huggingface_hub import snapshot_download
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 local_dir = snapshot_download(

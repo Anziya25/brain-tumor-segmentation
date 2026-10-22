@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from monai.transforms import MapTransform
 
+
 class PercentileClipd(MapTransform):
     """Clips each modality's intensities to the [lower, upper] percentile range."""
     def __init__(self, keys, lower=0.5, upper=99.5):
