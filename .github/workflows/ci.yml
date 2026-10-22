@@ -11,11 +11,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
 
-      - name: Install dependencies
+      - name: Install dependencies (CPU-only)
         run: |
-          pip install -r requirements.txt
-          pip install ruff pytest httpx
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          grep -v "onnxruntime-gpu" requirements.txt > requirements-ci.txt
+          echo "onnxruntime" >> requirements-ci.txt
+          pip install -r requirements-ci.txt
+          pip install ruff
 
       - name: Lint
         run: ruff check app tests

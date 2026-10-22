@@ -10,3 +10,5 @@ onnxruntime-gpu
 pytest
 httpx
 prometheus-client
+einops
+python-multipart
