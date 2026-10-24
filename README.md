@@ -118,10 +118,6 @@ flowchart LR
     API --> O["Prediction mask<br/>output directory"]
 ```
 
-A research and engineering project for **multi-modal brain tumor MRI segmentation** using a pretrained **UNETR** model, **PyTorch**, **MONAI**, and **BraTS-style** tumor regions. The repository includes a fine-tuning workflow, held-out evaluation, a FastAPI inference service, CPU-first Docker deployment, automated tests, and GitHub Actions CI.
-
-> **Research/portfolio use only.** This software is not a medical device and is not validated for diagnosis, treatment, or clinical decision-making.
-
 ## What the project does
 
 Four **co-registered 3D MRI volumes** are required per case: T1, contrast-enhanced T1 (**T1ce**), T2, and FLAIR. The inference pipeline validates that all four volumes have compatible shapes and physical-space grids. It **does not perform image registration**.
@@ -214,6 +210,9 @@ The current training configuration selects up to **60 complete cases** in sorted
 Use datasets only under their applicable access and licensing terms. Do not commit patient images or identifiable medical information.
 
 ## Training and evaluation
+
+For the detailed source-grounded experiment configuration, missing provenance fields, and evidence checklist, see **[Experiment Reproducibility Record](docs/EXPERIMENT_REPRODUCIBILITY.md)**.
+
 
 These commands require the dataset and model assets described below.
 
