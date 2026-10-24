@@ -9,6 +9,9 @@ from monai.inferers import sliding_window_inference
 from monai.metrics import DiceMetric, HausdorffDistanceMetric
 from monai.transforms import Compose
 
+from app.evaluation_reporting import write_evaluation_report
+from app.reproducibility import git_commit, sha256_file
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
 BASELINE_WEIGHTS = MODEL_DIR / "pytorch_model.bin"
@@ -244,6 +247,26 @@ def main():
     )
 
     print_results(baseline_results, finetuned_results)
+
+    report_path = PROJECT_ROOT / "models" / "evaluation_report.json"
+    write_evaluation_report(
+        report_path,
+        baseline=baseline_results,
+        finetuned=finetuned_results,
+        provenance={
+            "git_commit": git_commit(PROJECT_ROOT),
+            "device": str(device),
+            "held_out_patients": len(held_out_files),
+            "split_manifest_sha256": sha256_file(PROJECT_ROOT / "models" / "patient_splits.json"),
+            "baseline_weights_sha256": sha256_file(BASELINE_WEIGHTS),
+            "finetuned_checkpoint_sha256": sha256_file(FT_CHECKPOINT_PATH),
+            "threshold": 0.5,
+            "sliding_window_overlap": 0.25,
+            "patch_size": list(PATCH_SIZE),
+            "note": "Metrics use independent thresholded ET/TC/WT channels; the API enforces nested regions for its saved mask.",
+        },
+    )
+    print(f"Machine-readable evaluation report saved: {report_path}")
 
 
 if __name__ == "__main__":
