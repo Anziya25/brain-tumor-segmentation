@@ -28,7 +28,35 @@ jobs:
       - name: Install application and lint dependencies
         run: |
           .ci-venv/bin/python -m pip install -r requirements-cpu.txt ruff==0.11.13
-          .ci-venv/bin/python -m pip check
+
+      - name: Diagnose installed wheel metadata
+        run: |
+          .ci-venv/bin/python - <<'PY'
+          from importlib.metadata import distributions
+          from pip._vendor.packaging.tags import parse_tag
+
+          failures = []
+          for dist in distributions():
+              wheel = dist.read_text("WHEEL")
+              if not wheel:
+                  continue
+              for line in wheel.splitlines():
+                  if not line.startswith("Tag: "):
+                      continue
+                  tag = line.removeprefix("Tag: ").strip()
+                  try:
+                      parse_tag(tag)
+                  except (ValueError, TypeError) as exc:
+                      failures.append((dist.metadata.get("Name", "unknown"), dist.version, tag, str(exc)))
+          if failures:
+              for name, version, tag, error in failures:
+                  print(f"INVALID WHEEL TAG: {name}=={version}: {tag!r}: {error}")
+              raise SystemExit("Invalid installed wheel metadata detected")
+          print("Installed wheel tags parse successfully")
+          PY
+
+      - name: Check dependency compatibility
+        run: .ci-venv/bin/python -m pip check
 
       - name: Lint
         run: .ci-venv/bin/python -m ruff check app tests
