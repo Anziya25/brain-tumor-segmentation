@@ -10,6 +10,7 @@ from monai.metrics import DiceMetric, HausdorffDistanceMetric
 from monai.transforms import Compose
 
 from app.evaluation_reporting import write_evaluation_report
+from app.inference_service import enforce_region_nesting
 from app.reproducibility import git_commit, sha256_file
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -50,7 +51,7 @@ def evaluate(model, loader, device):
                 overlap=0.25,
             )
 
-            predictions = (outputs > 0.5).float()
+            predictions = enforce_region_nesting((outputs > 0.5).float())
 
             dice_metric(y_pred=predictions, y=targets)
             hd_metric(y_pred=predictions, y=targets)
@@ -263,7 +264,7 @@ def main():
             "threshold": 0.5,
             "sliding_window_overlap": 0.25,
             "patch_size": list(PATCH_SIZE),
-            "note": "Metrics use independent thresholded ET/TC/WT channels; the API enforces nested regions for its saved mask.",
+            "postprocessing": "threshold_0.5_then_union_nesting_ET_subset_TC_subset_WT",
         },
     )
     print(f"Machine-readable evaluation report saved: {report_path}")
