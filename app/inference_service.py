@@ -21,6 +21,26 @@ PATCH_SIZE = (128, 128, 128)
 SW_BATCH_SIZE = 1
 
 
+def regions_to_labelmap(pred_binary: np.ndarray) -> np.ndarray:
+    """Encode [ET, TC, WT] predictions as consistent BraTS labels 0/1/2/4.
+
+    Union-based correction preserves each predicted region and expands its
+    parent regions when the independent thresholds violate nesting.
+    """
+    if pred_binary.ndim != 4 or pred_binary.shape[0] != 3:
+        raise ValueError("Expected predictions shaped [3, D, H, W].")
+
+    et = pred_binary[0].astype(bool)
+    tc = pred_binary[1].astype(bool) | et
+    wt = pred_binary[2].astype(bool) | tc
+
+    combined = np.zeros(et.shape, dtype=np.uint8)
+    combined[wt] = 2
+    combined[tc] = 1
+    combined[et] = 4
+    return combined
+
+
 class SegmentationService:
     def __init__(self):
         # Import model code only when inference is actually requested.
@@ -120,14 +140,9 @@ class SegmentationService:
                 f"received {pred_binary.shape}."
             )
 
-        et, tc, wt = pred_binary[0], pred_binary[1], pred_binary[2]
-
-        # Convert nested regions to a single label map.
-        # 0 = background, 2 = WT-only, 1 = TC-only, 4 = ET.
-        combined = np.zeros(et.shape, dtype=np.uint8)
-        combined[wt > 0] = 2
-        combined[tc > 0] = 1
-        combined[et > 0] = 4
+        # Correct independently thresholded regions before encoding labels.
+        # ET is contained in TC, and TC is contained in WT.
+        combined = regions_to_labelmap(pred_binary)
 
         # Use the affine of the actual preprocessed image grid.
         # Do not apply the original T1 affine to a resampled prediction.
@@ -168,13 +183,13 @@ class SegmentationService:
 
         return {
             "enhancing_tumor_volume_ml": round(
-                float(et.sum()) * voxel_volume_ml, 3
+                float(np.count_nonzero(combined == 4)) * voxel_volume_ml, 3
             ),
             "tumor_core_volume_ml": round(
-                float(tc.sum()) * voxel_volume_ml, 3
+                float(np.count_nonzero((combined == 1) | (combined == 4))) * voxel_volume_ml, 3
             ),
             "whole_tumor_volume_ml": round(
-                float(wt.sum()) * voxel_volume_ml, 3
+                float(np.count_nonzero(combined != 0)) * voxel_volume_ml, 3
             ),
             "mask_path": str(output_path),
         }
