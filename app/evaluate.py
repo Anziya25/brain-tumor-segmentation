@@ -131,7 +131,7 @@ def print_results(baseline, finetuned):
 def load_finetuned_model(load_model, device):
     model, _ = load_model(str(BASELINE_WEIGHTS))
 
-    # Load only checkpoints produced by your trusted training pipeline.
+    # Only load checkpoints produced by your trusted training pipeline.
     checkpoint = torch.load(
         FT_CHECKPOINT_PATH,
         map_location="cpu",
@@ -168,12 +168,15 @@ def main():
     # Import model utilities only when evaluation actually runs.
     sys.path.insert(0, str(MODEL_DIR))
 
+    from inference import load_model
+
     from app.custom_transforms import ConvertToBratsMultiChanneld
     from app.datalist import build_datalist
     from app.preprocessing import get_preprocessing_transforms
-    from inference import load_model
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() else "cpu"
+    )
     print(f"Evaluation device: {device}")
 
     full_list = build_datalist(limit=60)
@@ -198,7 +201,10 @@ def main():
         ]
     )
 
-    eval_ds = Dataset(data=held_out_files, transform=eval_transforms)
+    eval_ds = Dataset(
+        data=held_out_files,
+        transform=eval_transforms,
+    )
     eval_loader = DataLoader(
         eval_ds,
         batch_size=1,
@@ -212,7 +218,11 @@ def main():
     baseline_model.eval()
 
     print("Evaluating pretrained baseline...")
-    baseline_results = evaluate(baseline_model, eval_loader, device)
+    baseline_results = evaluate(
+        baseline_model,
+        eval_loader,
+        device,
+    )
 
     del baseline_model
     gc.collect()
@@ -224,7 +234,11 @@ def main():
     finetuned_model = load_finetuned_model(load_model, device)
 
     print("Evaluating fine-tuned model...")
-    finetuned_results = evaluate(finetuned_model, eval_loader, device)
+    finetuned_results = evaluate(
+        finetuned_model,
+        eval_loader,
+        device,
+    )
 
     print_results(baseline_results, finetuned_results)
 

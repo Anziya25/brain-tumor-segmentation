@@ -1,7 +1,6 @@
 
 import logging
 import re
-import shutil
 import tempfile
 import uuid
 from pathlib import Path
@@ -10,7 +9,10 @@ from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from app.inference_service import SegmentationService, get_segmentation_service
+from app.inference_service import (
+    SegmentationService,
+    get_segmentation_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,7 @@ def get_nifti_suffix(filename: str | None) -> str | None:
 
     if lower_name.endswith(".nii.gz"):
         return ".nii.gz"
+
     if lower_name.endswith(".nii"):
         return ".nii"
 
@@ -141,7 +144,9 @@ def predict(
             )
 
             if not output_path.is_file():
-                raise RuntimeError("Inference did not produce a segmentation mask.")
+                raise RuntimeError(
+                    "Inference did not produce a segmentation mask."
+                )
 
             return PredictionResponse(
                 enhancing_tumor_volume_ml=float(
@@ -166,16 +171,25 @@ def predict(
         )
 
 
-@app.get("/predictions/{mask_name}", response_class=FileResponse)
+@app.get(
+    "/predictions/{mask_name}",
+    response_class=FileResponse,
+)
 def download_prediction(mask_name: str):
     # Only serve files created using the API's expected naming convention.
     if not re.fullmatch(r"[0-9a-f]{32}_mask\.nii\.gz", mask_name):
-        raise HTTPException(status_code=400, detail="Invalid mask filename.")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid mask filename.",
+        )
 
     mask_path = OUTPUT_DIR / mask_name
 
     if not mask_path.is_file():
-        raise HTTPException(status_code=404, detail="Segmentation mask not found.")
+        raise HTTPException(
+            status_code=404,
+            detail="Segmentation mask not found.",
+        )
 
     return FileResponse(
         path=mask_path,
