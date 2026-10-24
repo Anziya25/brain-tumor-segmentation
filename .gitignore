@@ -1,15 +1,29 @@
+
+# Python virtual environments
 venv/
 .venv/
+.venv-check/
 .venv-test/
+
+# Python cache and test artifacts
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
 .ipynb_checkpoints/
+
+# Environment variables and secrets
 .env
+.env.*
+
+# Datasets and generated predictions
 data/
-models/
 predictions/
+
+# Model weights and exported models
+models/
 *.pth
 *.onnx
+
+# Medical imaging files
 *.nii
 *.nii.gz

@@ -1,20 +1,31 @@
-﻿FROM python:3.11-slim
+﻿
+FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-# CUDA build of PyTorch first, matching the version used for training and
-# evaluation. Installing it before requirements.txt means pip sees torch as
-# already satisfied and never downloads the default PyPI build.
-RUN pip install --timeout=120 --retries=5 \
-    torch==2.5.1+cu121 torchvision==0.20.1+cu121 \
-    --index-url https://download.pytorch.org/whl/cu121
+# Install CUDA-enabled PyTorch.
+RUN python -m pip install \
+    --no-cache-dir \
+    --timeout=300 \
+    --retries=10 \
+    torch==2.8.0 \
+    --index-url https://download.pytorch.org/whl/cu126
 
+# Copy and install the complete application dependencies.
 COPY requirements.txt .
-RUN pip install -r requirements.txt
 
+RUN python -m pip install \
+    --no-cache-dir \
+    --timeout=300 \
+    --retries=10 \
+    -r requirements.txt \
+    && python -m pip check \
+    && python -c "import torch, numpy, monai, scipy; print('Core dependencies installed successfully')"
+
+# Copy application source code.
 COPY app/ app/
 
 EXPOSE 8000
