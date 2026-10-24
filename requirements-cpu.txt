@@ -1,0 +1,15 @@
+# CPU deployment and CI dependencies. Keep aligned with requirements.txt.
+monai[nibabel,itk]==1.6.0
+nibabel==5.4.2
+numpy==2.4.6
+scipy==1.16.3
+huggingface_hub==2.0.0
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+pydantic==2.13.5
+python-multipart==0.0.32
+onnx==1.23.0
+onnxruntime==1.20.2
+pytest==9.1.1
+httpx==0.28.1
+prometheus-client==0.26.0
