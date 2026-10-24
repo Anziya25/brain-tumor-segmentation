@@ -1,5 +1,8 @@
 
 import functools
+import sys
+
+from app.preprocessing import get_inference_transforms, validate_inference_geometry
 from pathlib import Path
 
 import nibabel as nib
@@ -11,11 +14,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
 FT_CHECKPOINT_PATH = PROJECT_ROOT / "models" / "finetuned_unetr.pth"
 
-import sys
-
 sys.path.insert(0, str(MODEL_DIR))
-
-from app.preprocessing import get_inference_transforms, validate_inference_geometry
 
 PATCH_SIZE = (128, 128, 128)
 SW_BATCH_SIZE = 1
