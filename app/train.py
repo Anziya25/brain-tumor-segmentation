@@ -20,6 +20,7 @@ from app.device_utils import autocast_context, make_grad_scaler
 from app.custom_transforms import ConvertToBratsMultiChanneld
 from app.datalist import build_datalist
 from app.preprocessing import get_preprocessing_transforms
+from app.reproducibility import build_run_metadata, save_run_metadata, seed_training
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
@@ -33,8 +34,10 @@ VAL_SPLIT = 8
 PATCH_SIZE = (128, 128, 128)
 EPOCHS = 15              # smoke test; raise to 15-20 once this works
 LR = 1e-5
+SEED = 42
 CHECKPOINT_PATH = PROJECT_ROOT / "models" / "finetuned_unetr.pth"
 
+seed_training(SEED)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # --- Data ---
@@ -46,6 +49,29 @@ splits = create_or_load_splits(
 train_files = splits["train"]
 val_files = splits["val"]
 print(f"Train patients: {len(train_files)}, Val patients: {len(val_files)}")
+
+run_metadata = build_run_metadata(
+    seed=SEED,
+    project_root=PROJECT_ROOT,
+    split_manifest=PROJECT_ROOT / "models" / "patient_splits.json",
+    pretrained_weights=MODEL_DIR / "pytorch_model.bin",
+    config={
+        "num_patients": NUM_PATIENTS,
+        "train_count": len(train_files),
+        "val_count": len(val_files),
+        "test_count": len(splits["test"]),
+        "patch_size": list(PATCH_SIZE),
+        "epochs": EPOCHS,
+        "learning_rate": LR,
+        "weight_decay": 1e-5,
+        "train_batch_size": 1,
+        "validation_overlap": 0.25,
+        "prediction_threshold": 0.5,
+    },
+    device=device,
+)
+save_run_metadata(run_metadata, CHECKPOINT_PATH.with_suffix(".run.json"))
+print(f"Training seed: {SEED}; run metadata saved beside checkpoint.")
 
 base_transforms = get_preprocessing_transforms()
 
@@ -124,7 +150,7 @@ for epoch in range(EPOCHS):
     if should_save_checkpoint(mean_val_dice, best_val_dice):
         best_val_dice = mean_val_dice
         CHECKPOINT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({"model_state_dict": model.state_dict(), "val_dice_mean": best_val_dice}, CHECKPOINT_PATH)
+        torch.save({"model_state_dict": model.state_dict(), "val_dice_mean": best_val_dice, "run_metadata": run_metadata}, CHECKPOINT_PATH)
         print(f"  -> New best model saved (val_dice={best_val_dice:.4f})")
 
 print("Fine-tuning complete. Best val Dice:", best_val_dice)
