@@ -12,23 +12,23 @@ from monai.transforms import (
     RandFlipd,
     RandShiftIntensityd,
 )
-from torch.cuda.amp import GradScaler, autocast
 from torch.optim import AdamW
 
 from app.checkpoint_selection import should_save_checkpoint
 from app.data_splits import create_or_load_splits
+from app.device_utils import autocast_context, make_grad_scaler
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
 sys.path.insert(0, str(MODEL_DIR))
 
-from custom_transforms import ConvertToBratsMultiChanneld
-from datalist import build_datalist
+from app.custom_transforms import ConvertToBratsMultiChanneld
+from app.datalist import build_datalist
 from inference import load_model
-from preprocessing import get_preprocessing_transforms
+from app.preprocessing import get_preprocessing_transforms
 
 # --- Config: START SMALL for the first run ---
-NUM_PATIENTS = 60       # smoke test; raise to 40+ once this works
+NUM_PATIENTS = 60       # 32 train + 8 validation + 20 held-out test
 VAL_SPLIT = 8
 PATCH_SIZE = (128, 128, 128)
 EPOCHS = 15              # smoke test; raise to 15-20 once this works
@@ -77,7 +77,7 @@ model.to(device)
 
 optimizer = AdamW(model.parameters(), lr=LR, weight_decay=1e-5)
 loss_fn = DiceLoss(sigmoid=True, smooth_nr=0, smooth_dr=1e-5, squared_pred=True)
-scaler = GradScaler()
+scaler = make_grad_scaler(device)
 dice_metric = DiceMetric(include_background=True, reduction="mean_batch")
 
 best_val_dice = float("-inf")
@@ -91,7 +91,7 @@ for epoch in range(EPOCHS):
         targets = batch["seg"].to(device)
 
         optimizer.zero_grad()
-        with autocast():
+        with autocast_context(device):
             outputs = model(images)
             loss = loss_fn(outputs, targets)
 
