@@ -15,7 +15,7 @@ import sys
 
 sys.path.insert(0, str(MODEL_DIR))
 
-from app.preprocessing import get_inference_transforms
+from app.preprocessing import get_inference_transforms, validate_inference_geometry
 
 PATCH_SIZE = (128, 128, 128)
 SW_BATCH_SIZE = 1
@@ -115,6 +115,8 @@ class SegmentationService:
                 raise FileNotFoundError(
                     f"{modality} MRI file not found: {path}"
                 )
+
+        validate_inference_geometry(input_paths)
 
         sample = dict(input_paths)
         processed = self.transforms(sample)
