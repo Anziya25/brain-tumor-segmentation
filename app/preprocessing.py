@@ -1,4 +1,5 @@
 import nibabel as nib
+from nibabel.filebasedimages import ImageFileError
 import numpy as np
 
 from monai.transforms import (
@@ -57,7 +58,7 @@ def validate_inference_geometry(input_paths, tolerance_mm=1e-3):
     for modality in modalities:
         try:
             image = nib.load(str(input_paths[modality]))
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, ImageFileError, EOFError) as exc:
             raise ValueError(f"{modality} is not a readable NIfTI image") from exc
 
         shape = image.shape
