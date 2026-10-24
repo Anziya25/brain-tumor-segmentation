@@ -1,5 +1,5 @@
 # CPU deployment and CI dependencies. Keep aligned with requirements.txt.
-monai[nibabel,itk]==1.6.0
+monai==1.6.0
 nibabel==5.4.2
 numpy==2.4.6
 scipy==1.16.3
