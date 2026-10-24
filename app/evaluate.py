@@ -172,6 +172,7 @@ def main():
 
     from app.custom_transforms import ConvertToBratsMultiChanneld
     from app.datalist import build_datalist
+    from app.data_splits import create_or_load_splits
     from app.preprocessing import get_preprocessing_transforms
 
     device = torch.device(
@@ -187,9 +188,11 @@ def main():
             f"{len(full_list)}."
         )
 
-    # This is a valid held-out test split only if these patients were
-    # excluded from training, fine-tuning, and model selection.
-    held_out_files = full_list[-20:]
+    splits = create_or_load_splits(
+        full_list, PROJECT_ROOT / "models" / "patient_splits.json",
+        train_count=32, val_count=8, test_count=20,
+    )
+    held_out_files = splits["test"]
 
     print(f"Held-out evaluation set: {len(held_out_files)} patients")
     print("Verify patient IDs against the training and validation splits.")
