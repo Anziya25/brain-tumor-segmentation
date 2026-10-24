@@ -12,7 +12,7 @@ FT_CHECKPOINT_PATH = PROJECT_ROOT / "models" / "finetuned_unetr.pth"
 ONNX_PATH = PROJECT_ROOT / "models" / "finetuned_unetr.onnx"
 sys.path.insert(0, str(MODEL_DIR))
 
-from inference import load_model
+from inference import load_model  # noqa: E402 - model path configured above
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 N_RUNS = 20
