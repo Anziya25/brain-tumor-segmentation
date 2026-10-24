@@ -15,6 +15,8 @@ from monai.transforms import (
 from torch.cuda.amp import GradScaler, autocast
 from torch.optim import AdamW
 
+from app.checkpoint_selection import should_save_checkpoint
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
 sys.path.insert(0, str(MODEL_DIR))
@@ -73,8 +75,8 @@ loss_fn = DiceLoss(sigmoid=True, smooth_nr=0, smooth_dr=1e-5, squared_pred=True)
 scaler = GradScaler()
 dice_metric = DiceMetric(include_background=True, reduction="mean_batch")
 
-best_val_dice = metadata.get("val_dice_mean", 0.0)
-print(f"Starting fine-tune from pretrained val_dice={best_val_dice:.4f}")
+best_val_dice = float("-inf")
+print("Starting fine-tune; checkpoint selection uses this run's validation Dice.")
 
 for epoch in range(EPOCHS):
     model.train()
@@ -114,8 +116,9 @@ for epoch in range(EPOCHS):
     print(f"Epoch {epoch+1}/{EPOCHS} - train loss: {avg_loss:.4f} - "
           f"val Dice (ET,TC,WT): {val_dice.tolist()} - mean: {mean_val_dice:.4f}")
 
-    if mean_val_dice > best_val_dice:
+    if should_save_checkpoint(mean_val_dice, best_val_dice):
         best_val_dice = mean_val_dice
+        CHECKPOINT_PATH.parent.mkdir(parents=True, exist_ok=True)
         torch.save({"model_state_dict": model.state_dict(), "val_dice_mean": best_val_dice}, CHECKPOINT_PATH)
         print(f"  -> New best model saved (val_dice={best_val_dice:.4f})")
 
