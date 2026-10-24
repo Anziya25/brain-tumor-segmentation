@@ -92,7 +92,7 @@ def cleanup_expired_predictions(now=None):
     """Delete only expired files matching the generated prediction filename."""
     cutoff = (time.time() if now is None else now) - PREDICTION_TTL_SECONDS
     for path in OUTPUT_DIR.glob("*_mask.nii.gz"):
-        if not re.fullmatch(r"[0-9a-f]{32}_mask\\.nii\\.gz", path.name):
+        if not re.fullmatch(r"[0-9a-f]{32}_mask\.nii\.gz", path.name):
             continue
         try:
             if path.is_file() and path.stat().st_mtime < cutoff:
