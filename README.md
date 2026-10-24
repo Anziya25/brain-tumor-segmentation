@@ -4,7 +4,7 @@
 
 **UNETR · PyTorch · MONAI · FastAPI · Docker · GitHub Actions**
 
-[![CI](https://github.com/Anziya25/brain-tumor-segmentation/actions/workflows/ci.yml/badge.svg?branch=fix%2Fsegmentation-consistency)](https://github.com/Anziya25/brain-tumor-segmentation/actions/workflows/ci.yml)
+[![CI](https://github.com/Anziya25/brain-tumor-segmentation/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Anziya25/brain-tumor-segmentation/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.8-EE4C2C?logo=pytorch&logoColor=white)
 ![MONAI](https://img.shields.io/badge/MONAI-1.6-00A6A6)
@@ -213,7 +213,7 @@ Use datasets only under their applicable access and licensing terms. Do not comm
 
 ## Training and evaluation
 
-For the detailed source-grounded experiment configuration, missing provenance fields, and evidence checklist, see **[Experiment Reproducibility Record](docs/EXPERIMENT_REPRODUCIBILITY.md)**.
+For the **60-case exploratory evaluation** (including measured results, case-level observations, and limitations), see **[Evaluation results](docs/EXPLORATORY_EVALUATION.md)**. The original checkpoint's training patient IDs are unknown, so these are **not held-out test results**.
 
 
 These commands require the dataset and model assets described below.
@@ -225,9 +225,9 @@ python -m app.evaluate
 
 Training uses 128³ patches, AdamW, Dice loss, and validation Dice to select the fine-tuned checkpoint. The current configuration runs **15 epochs**; these are source-code settings, not a claim that a published experiment was reproduced.
 
-Evaluation compares the pretrained baseline and fine-tuned checkpoint on the **20 held-out patients**, reporting Dice and 95th-percentile Hausdorff distance (HD95) for ET, TC, and WT. Inspect valid-region counts and empty-region handling before interpreting metrics.
+The current evaluation code is designed to compare a pretrained baseline and fine-tuned checkpoint on a **20-patient split**, reporting Dice and HD95. **Do not treat a newly generated split manifest as proof that the existing checkpoint did not train on those patients.** Inspect valid-region counts and empty-region handling before interpreting metrics.
 
-**No numerical model-accuracy or speedup claim is made in this README** because a verified, reproducible experiment report with dataset provenance and recorded results has not yet been added.
+**Exploratory 60-case Dice (mean):** ET **0.8138**, TC **0.8971**, WT **0.8807**. Original training overlap is unknown; these are **not independent test accuracy**. [Methods, HD95 and limitations](docs/EXPLORATORY_EVALUATION.md).
 
 ## Model assets
 
@@ -317,6 +317,6 @@ New training runs record the seed, dependency versions, Git revision, dataset sp
 - Benchmark scripts and synthetic tests must not be presented as validated clinical performance measurements.
 - This project is for technical research and demonstration, **not clinical use**.
 
-## Next documentation milestones
+## Before making stronger performance claims
 
-Before a public portfolio release, add a verified experiment record (dataset provenance, exact pretrained-model source/revision, split manifest or reproducible hash, hardware, training settings, results, and limitations), verify the optional GPU path if it will be advertised, and audit repository contents for unnecessary or sensitive files.
+Recover or establish the original training split, checkpoint/source attribution and license, dataset provenance, and physical spacing verification. A new patient-disjoint evaluation is required for generalization claims. The GPU Docker deployment remains unverified by CI.
