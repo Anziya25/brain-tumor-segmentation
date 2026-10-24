@@ -5,3 +5,17 @@ predictions/
 __pycache__/
 *.pyc
 .git/
+
+# Local environments, credentials, test caches and private files
+.venv/
+.venv-check/
+.venv-test/
+.ci-venv/
+.env
+.env.*
+.pytest_cache/
+.ipynb_checkpoints/
+*.nii
+*.nii.gz
+*.pth
+*.onnx
