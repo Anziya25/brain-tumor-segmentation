@@ -1,15 +1,13 @@
 services:
   brain-tumor-api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
-      - ./models:/app/models
+      - ./models:/app/models:ro
       - ./predictions:/app/predictions
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    restart: unless-stopped
+    # Model loading requires pretrained and fine-tuned weights in ./models.
+    # Keep the API bound to localhost; do not expose medical uploads publicly.

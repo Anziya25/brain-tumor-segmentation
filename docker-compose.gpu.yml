@@ -1,0 +1,7 @@
+# Run with: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+services:
+  brain-tumor-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    gpus: all

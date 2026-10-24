@@ -27,3 +27,7 @@ models/
 # Medical imaging files
 *.nii
 *.nii.gz
+
+# CI environments and local run artifacts
+.ci-venv/
+*.run.json

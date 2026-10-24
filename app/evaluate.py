@@ -9,6 +9,10 @@ from monai.inferers import sliding_window_inference
 from monai.metrics import DiceMetric, HausdorffDistanceMetric
 from monai.transforms import Compose
 
+from app.evaluation_reporting import write_evaluation_report
+from app.inference_service import enforce_region_nesting
+from app.reproducibility import git_commit, sha256_file
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
 BASELINE_WEIGHTS = MODEL_DIR / "pytorch_model.bin"
@@ -47,7 +51,7 @@ def evaluate(model, loader, device):
                 overlap=0.25,
             )
 
-            predictions = (outputs > 0.5).float()
+            predictions = enforce_region_nesting((outputs > 0.5).float())
 
             dice_metric(y_pred=predictions, y=targets)
             hd_metric(y_pred=predictions, y=targets)
@@ -172,6 +176,7 @@ def main():
 
     from app.custom_transforms import ConvertToBratsMultiChanneld
     from app.datalist import build_datalist
+    from app.data_splits import create_or_load_splits
     from app.preprocessing import get_preprocessing_transforms
 
     device = torch.device(
@@ -187,9 +192,11 @@ def main():
             f"{len(full_list)}."
         )
 
-    # This is a valid held-out test split only if these patients were
-    # excluded from training, fine-tuning, and model selection.
-    held_out_files = full_list[-20:]
+    splits = create_or_load_splits(
+        full_list, PROJECT_ROOT / "models" / "patient_splits.json",
+        train_count=32, val_count=8, test_count=20,
+    )
+    held_out_files = splits["test"]
 
     print(f"Held-out evaluation set: {len(held_out_files)} patients")
     print("Verify patient IDs against the training and validation splits.")
@@ -241,6 +248,26 @@ def main():
     )
 
     print_results(baseline_results, finetuned_results)
+
+    report_path = PROJECT_ROOT / "models" / "evaluation_report.json"
+    write_evaluation_report(
+        report_path,
+        baseline=baseline_results,
+        finetuned=finetuned_results,
+        provenance={
+            "git_commit": git_commit(PROJECT_ROOT),
+            "device": str(device),
+            "held_out_patients": len(held_out_files),
+            "split_manifest_sha256": sha256_file(PROJECT_ROOT / "models" / "patient_splits.json"),
+            "baseline_weights_sha256": sha256_file(BASELINE_WEIGHTS),
+            "finetuned_checkpoint_sha256": sha256_file(FT_CHECKPOINT_PATH),
+            "threshold": 0.5,
+            "sliding_window_overlap": 0.25,
+            "patch_size": list(PATCH_SIZE),
+            "postprocessing": "threshold_0.5_then_union_nesting_ET_subset_TC_subset_WT",
+        },
+    )
+    print(f"Machine-readable evaluation report saved: {report_path}")
 
 
 if __name__ == "__main__":
