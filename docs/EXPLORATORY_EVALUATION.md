@@ -24,6 +24,8 @@ All 60 patients returned finite Dice and HD95 values for each region. The follow
 
 **Macro-average of three regional mean Dice scores:** 0.8638 (exploratory cohort only). Do not confuse this with the checkpoint's reported validation Dice of 0.8926.
 
+![Mean Dice and HD95 by region](assets/evaluation-summary.svg)
+
 ## Case-level observations
 
 Selected from the user-provided `patient_metrics.csv` contents:
