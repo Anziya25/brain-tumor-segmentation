@@ -17,15 +17,15 @@ from torch.optim import AdamW
 from app.checkpoint_selection import should_save_checkpoint
 from app.data_splits import create_or_load_splits
 from app.device_utils import autocast_context, make_grad_scaler
+from app.custom_transforms import ConvertToBratsMultiChanneld
+from app.datalist import build_datalist
+from app.preprocessing import get_preprocessing_transforms
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
 sys.path.insert(0, str(MODEL_DIR))
 
-from app.custom_transforms import ConvertToBratsMultiChanneld
-from app.datalist import build_datalist
-from inference import load_model
-from app.preprocessing import get_preprocessing_transforms
+from inference import load_model  # noqa: E402 - model package path set above
 
 # --- Config: START SMALL for the first run ---
 NUM_PATIENTS = 60       # 32 train + 8 validation + 20 held-out test
