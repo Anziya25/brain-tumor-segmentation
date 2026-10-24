@@ -112,11 +112,13 @@ flowchart LR
     G["Git push / pull request"] --> CI["GitHub Actions"]
     CI --> L["Ruff + pytest<br/>CPU"]
     CI --> D["Docker build<br/>API import smoke test"]
-    D --> I["CPU image"]
-    I --> API["FastAPI<br/>localhost:8000"]
+    D --> S["CI verifies build/import only"]
+    I["Local Docker Compose<br/>CPU image build"] --> API["FastAPI<br/>localhost:8000"]
     W["Local model weights<br/>read-only mount"] --> API
     API --> O["Prediction mask<br/>output directory"]
 ```
+
+CI **does not deploy** the API. Running Docker Compose locally is a separate, user-initiated step.
 
 ## What the project does
 
@@ -303,6 +305,9 @@ docker run --rm brain-tumor-segmentation:local python -c "import app.main; print
 GitHub Actions runs linting, automated tests, CPU Docker build/import smoke testing, and Compose validation on pushes and pull requests. A passing CI run verifies these checks—not end-to-end inference with real model weights, training reproducibility, clinical performance, or GPU deployment.
 
 ## Reproducibility and limitations
+
+New training runs record the seed, dependency versions, Git revision, dataset split hash, and pretrained weights hash in `models/finetuned_unetr.run.json` and the checkpoint. After a verified held-out evaluation, `python -m app.evaluate` writes `models/evaluation_report.json` with per-region Dice, HD95, valid counts, and provenance. These local files are not included in Git.
+
 
 - Dataset files, pretrained weights, fine-tuned weights, and split manifest are **not bundled** in Git.
 - Exact experimental reproduction requires the original data selection, split manifest, pretrained model revision, training environment, random seeds, and checkpoint provenance.
