@@ -45,6 +45,12 @@ flowchart LR
 
 The diagram illustrates **logical region containment**, not an actual patient scan or a measured model output.
 
+## Example segmentation output
+
+![BraTS MRI with ground-truth and predicted tumor segmentation](docs/assets/comparison.png)
+
+*Example MRI slice with ground-truth and model-predicted tumor regions. This is a qualitative illustration, not an independent held-out performance result.*
+
 ## Quick start
 
 <details>
