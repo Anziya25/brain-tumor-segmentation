@@ -20,6 +20,19 @@ PATCH_SIZE = (128, 128, 128)
 SW_BATCH_SIZE = 1
 
 
+def enforce_region_nesting(pred_binary: torch.Tensor) -> torch.Tensor:
+    """Enforce ET ⊆ TC ⊆ WT for channel-first torch predictions.
+
+    Accepts [3, D, H, W] or [B, 3, D, H, W] and preserves input dtype.
+    """
+    if pred_binary.ndim not in (4, 5) or pred_binary.shape[-4] != 3:
+        raise ValueError("Expected predictions shaped [3, D, H, W] or [B, 3, D, H, W].")
+    et = pred_binary.select(-4, 0).bool()
+    tc = pred_binary.select(-4, 1).bool() | et
+    wt = pred_binary.select(-4, 2).bool() | tc
+    return torch.stack((et, tc, wt), dim=-4).to(dtype=pred_binary.dtype)
+
+
 def regions_to_labelmap(pred_binary: np.ndarray) -> np.ndarray:
     """Encode [ET, TC, WT] predictions as consistent BraTS labels 0/1/2/4.
 
@@ -133,7 +146,7 @@ class SegmentationService:
             )
 
         # Expected channel order: [ET, TC, WT].
-        pred_binary = (probs > 0.5).to(torch.uint8).cpu().numpy()[0]
+        pred_binary = enforce_region_nesting((probs > 0.5).to(torch.uint8)).cpu().numpy()[0]
 
         if pred_binary.ndim != 4 or pred_binary.shape[0] != 3:
             raise ValueError(
