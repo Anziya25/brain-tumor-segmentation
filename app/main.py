@@ -1,5 +1,8 @@
 
 import logging
+import time
+from contextlib import contextmanager
+from threading import BoundedSemaphore
 import re
 import tempfile
 import uuid
@@ -8,6 +11,8 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+
+from app.preprocessing import validate_inference_geometry
 
 from app.inference_service import (
     SegmentationService,
@@ -23,6 +28,8 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 MAX_FILE_SIZE_BYTES = 512 * 1024 * 1024  # 512 MiB per MRI file
 UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MiB
+PREDICTION_TTL_SECONDS = 24 * 60 * 60
+INFERENCE_LIMIT = BoundedSemaphore(1)  # Per process; deploy one worker for GPU safety.
 
 
 class PredictionResponse(BaseModel):
@@ -81,6 +88,29 @@ def save_upload(upload: UploadFile, destination: Path) -> None:
         )
 
 
+def cleanup_expired_predictions(now=None):
+    """Delete only expired files matching the generated prediction filename."""
+    cutoff = (time.time() if now is None else now) - PREDICTION_TTL_SECONDS
+    for path in OUTPUT_DIR.glob("*_mask.nii.gz"):
+        if not re.fullmatch(r"[0-9a-f]{32}_mask\\.nii\\.gz", path.name):
+            continue
+        try:
+            if path.is_file() and path.stat().st_mtime < cutoff:
+                path.unlink()
+        except OSError:
+            logger.warning("Could not clean up expired prediction %s", path.name)
+
+
+@contextmanager
+def inference_slot():
+    if not INFERENCE_LIMIT.acquire(blocking=False):
+        raise HTTPException(status_code=429, detail="Inference is busy. Retry later.")
+    try:
+        yield
+    finally:
+        INFERENCE_LIMIT.release()
+
+
 @app.get("/health", response_model=HealthResponse)
 def health(
     service: SegmentationService = Depends(get_segmentation_service),
@@ -132,16 +162,28 @@ def predict(
                 save_upload(upload, destination)
                 paths[modality] = str(destination)
 
+            # Validate NIfTI headers, dimensions and affine alignment before inference.
+            try:
+                validate_inference_geometry(paths)
+            except (ValueError, OSError, EOFError) as exc:
+                raise HTTPException(status_code=400, detail=f"Invalid MRI input: {exc}") from exc
+
+            cleanup_expired_predictions()
             output_name = f"{uuid.uuid4().hex}_mask.nii.gz"
             output_path = OUTPUT_DIR / output_name
 
-            result = service.predict(
-                t1_path=paths["t1"],
-                t1ce_path=paths["t1ce"],
-                t2_path=paths["t2"],
-                flair_path=paths["flair"],
-                output_mask_path=str(output_path),
-            )
+            try:
+                with inference_slot():
+                    result = service.predict(
+                        t1_path=paths["t1"],
+                        t1ce_path=paths["t1ce"],
+                        t2_path=paths["t2"],
+                        flair_path=paths["flair"],
+                        output_mask_path=str(output_path),
+                    )
+            except Exception:
+                output_path.unlink(missing_ok=True)
+                raise
 
             if not output_path.is_file():
                 raise RuntimeError(
@@ -183,6 +225,7 @@ def download_prediction(mask_name: str):
             detail="Invalid mask filename.",
         )
 
+    cleanup_expired_predictions()
     mask_path = OUTPUT_DIR / mask_name
 
     if not mask_path.is_file():
