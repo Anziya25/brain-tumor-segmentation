@@ -16,6 +16,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.optim import AdamW
 
 from app.checkpoint_selection import should_save_checkpoint
+from app.data_splits import create_or_load_splits
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "models" / "unetr-brats"
@@ -27,7 +28,7 @@ from inference import load_model
 from preprocessing import get_preprocessing_transforms
 
 # --- Config: START SMALL for the first run ---
-NUM_PATIENTS = 40       # smoke test; raise to 40+ once this works
+NUM_PATIENTS = 60       # smoke test; raise to 40+ once this works
 VAL_SPLIT = 8
 PATCH_SIZE = (128, 128, 128)
 EPOCHS = 15              # smoke test; raise to 15-20 once this works
@@ -38,8 +39,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # --- Data ---
 full_list = build_datalist(limit=NUM_PATIENTS)
-train_files = full_list[:-VAL_SPLIT]
-val_files = full_list[-VAL_SPLIT:]
+splits = create_or_load_splits(
+    full_list, PROJECT_ROOT / "models" / "patient_splits.json",
+    train_count=NUM_PATIENTS - VAL_SPLIT - 20, val_count=VAL_SPLIT, test_count=20,
+)
+train_files = splits["train"]
+val_files = splits["val"]
 print(f"Train patients: {len(train_files)}, Val patients: {len(val_files)}")
 
 base_transforms = get_preprocessing_transforms()
