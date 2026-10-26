@@ -1,3 +1,4 @@
+import json
 import sys
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from monai.transforms import (
 from torch.optim import AdamW
 
 from app.checkpoint_selection import should_save_checkpoint
-from app.data_splits import create_or_load_splits
+from app.data_splits import patient_id
 from app.device_utils import autocast_context, make_grad_scaler
 from app.custom_transforms import ConvertToBratsMultiChanneld
 from app.datalist import build_datalist
@@ -29,37 +30,58 @@ sys.path.insert(0, str(MODEL_DIR))
 from inference import load_model  # noqa: E402 - model package path set above
 
 # --- Config: START SMALL for the first run ---
-NUM_PATIENTS = 60       # 32 train + 8 validation + 20 held-out test
-VAL_SPLIT = 8
+NUM_PATIENTS = 369      # 259 train + 55 validation + 55 held-out test
+VAL_SPLIT = 55
 PATCH_SIZE = (128, 128, 128)
 EPOCHS = 15              # smoke test; raise to 15-20 once this works
 LR = 1e-5
 SEED = 42
-CHECKPOINT_PATH = PROJECT_ROOT / "models" / "finetuned_unetr.pth"
+CHECKPOINT_PATH = PROJECT_ROOT / "models" / "finetuned_unetr_fresh.pth"
+SPLIT_MANIFEST = PROJECT_ROOT / "models" / "patient_splits_fresh.json"
 
 seed_training(SEED)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # --- Data ---
-full_list = build_datalist(limit=NUM_PATIENTS)
-splits = create_or_load_splits(
-    full_list, PROJECT_ROOT / "models" / "patient_splits.json",
-    train_count=NUM_PATIENTS - VAL_SPLIT - 20, val_count=VAL_SPLIT, test_count=20,
-)
-train_files = splits["train"]
-val_files = splits["val"]
+if not SPLIT_MANIFEST.is_file():
+    raise FileNotFoundError(f"Run the split-creation step first: {SPLIT_MANIFEST}")
+if CHECKPOINT_PATH.exists() or CHECKPOINT_PATH.with_suffix(".run.json").exists():
+    raise FileExistsError(
+        f"Fresh-run output already exists: {CHECKPOINT_PATH}; "
+        "move it aside explicitly before starting another run"
+    )
+
+full_list = build_datalist()
+by_id = {patient_id(entry): entry for entry in full_list}
+if len(by_id) != len(full_list):
+    raise ValueError("Duplicate patient IDs in dataset")
+splits_ids = json.loads(SPLIT_MANIFEST.read_text(encoding="utf-8"))
+expected_counts = {"train": 259, "val": 55, "test": 55}
+if set(splits_ids) != set(expected_counts):
+    raise ValueError("Split manifest must have exactly train, val and test keys")
+for group, count in expected_counts.items():
+    if not isinstance(splits_ids[group], list) or len(splits_ids[group]) != count:
+        raise ValueError(f"Invalid {group} split: expected {count} patient IDs")
+all_ids = [pid for group in expected_counts for pid in splits_ids[group]]
+if len(all_ids) != len(set(all_ids)):
+    raise ValueError("Duplicate or overlapping patient IDs across splits")
+if len(full_list) != NUM_PATIENTS or set(all_ids) != set(by_id):
+    raise ValueError("Split manifest does not match the complete available dataset")
+train_files = [by_id[pid] for pid in splits_ids["train"]]
+val_files = [by_id[pid] for pid in splits_ids["val"]]
+# The test cohort is intentionally excluded from training and checkpoint selection.
 print(f"Train patients: {len(train_files)}, Val patients: {len(val_files)}")
 
 run_metadata = build_run_metadata(
     seed=SEED,
     project_root=PROJECT_ROOT,
-    split_manifest=PROJECT_ROOT / "models" / "patient_splits.json",
+    split_manifest=SPLIT_MANIFEST,
     pretrained_weights=MODEL_DIR / "pytorch_model.bin",
     config={
         "num_patients": NUM_PATIENTS,
         "train_count": len(train_files),
         "val_count": len(val_files),
-        "test_count": len(splits["test"]),
+        "test_count": len(splits_ids["test"]),
         "patch_size": list(PATCH_SIZE),
         "epochs": EPOCHS,
         "learning_rate": LR,
