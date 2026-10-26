@@ -51,7 +51,9 @@ def main():
     if len(entries) != 368 or len(by_id) != 368 or set(by_id) != set(all_ids):
         raise ValueError("Current dataset differs from the saved 368-patient manifest")
 
-    checkpoint = torch.load(CHECKPOINT, map_location="cpu", weights_only=True)
+    # Training metadata contains torch.torch_version.TorchVersion; allow only this known type.
+    with torch.serialization.safe_globals([torch.torch_version.TorchVersion]):
+        checkpoint = torch.load(CHECKPOINT, map_location="cpu", weights_only=True)
     if not isinstance(checkpoint, dict) or "model_state_dict" not in checkpoint:
         raise ValueError("Unexpected fine-tuned checkpoint structure")
     metadata = checkpoint.get("run_metadata")
