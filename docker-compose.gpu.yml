@@ -1,7 +1,10 @@
 # Run with: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+# Requires Docker Desktop WSL2 GPU support on Windows or NVIDIA Container Toolkit on Linux.
 services:
   brain-tumor-api:
     build:
       context: .
       dockerfile: Dockerfile.gpu
     gpus: all
+    environment:
+      FINETUNED_CHECKPOINT: finetuned_unetr_fresh.pth
