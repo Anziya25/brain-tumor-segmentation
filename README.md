@@ -85,7 +85,7 @@ This tests the image and API import; **it does not run a real MRI prediction**.
 <summary><strong>🧠 Run actual MRI inference (model assets required)</strong></summary>
 
 1. Supply the authorized pretrained model implementation and weights in `models/unetr-brats/`.
-2. Supply your trusted `models/finetuned_unetr.pth`.
+2. Supply your trusted `models/finetuned_unetr_fresh.pth` for the GPU Compose configuration (or `models/finetuned_unetr.pth` for the legacy/default service).
 3. Start the API with `docker compose up --build` or the local Uvicorn command below.
 4. Submit four **already co-registered** NIfTI volumes to `POST /predict`.
 
@@ -95,10 +95,10 @@ This tests the image and API import; **it does not run a real MRI prediction**.
 
 ```mermaid
 flowchart TD
-    D["BraTS 2020 cases<br/>up to 60 complete patients"] --> S["Persisted patient-level split"]
-    S --> T["Train · 32 patients"]
-    S --> V["Validation · 8 patients"]
-    S --> H["Held-out test · 20 patients"]
+    D["BraTS 2020<br/>368 complete patients"] --> S["Persisted patient-level split"]
+    S --> T["Train · 258 patients"]
+    S --> V["Validation · 55 patients"]
+    S --> H["Held-out test · 55 patients"]
     T --> F["Fine-tune UNETR<br/>15 epochs · Dice loss"]
     V --> K["Select best checkpoint<br/>validation Dice"]
     F --> K
@@ -213,7 +213,7 @@ data/
         ...
 ```
 
-The current training configuration selects up to **60 complete cases** in sorted directory order and uses **32 training / 8 validation / 20 held-out test** patients. The split manifest is stored at `models/patient_splits.json`. Preserve this manifest when reproducing an experiment; changing the underlying dataset or split invalidates direct comparisons.
+The **fresh fine-tuning experiment** used **368 complete BraTS 2020 patients** (258 train / 55 validation / 55 test; seed 42), with split manifest `models/patient_splits_fresh.json`. The older exploratory pipeline used up to 60 cases and `models/patient_splits.json`; these are separate experiments. Preserve the corresponding manifest to reproduce each run.
 
 Use datasets only under their applicable access and licensing terms. Do not commit patient images or identifiable medical information.
 
@@ -231,7 +231,7 @@ python -m app.evaluate
 
 Training uses 128³ patches, AdamW, Dice loss, and validation Dice to select the fine-tuned checkpoint. The current configuration runs **15 epochs**; these are source-code settings, not a claim that a published experiment was reproduced.
 
-The current evaluation code is designed to compare a pretrained baseline and fine-tuned checkpoint on a **20-patient split**, reporting Dice and HD95. **Do not treat a newly generated split manifest as proof that the existing checkpoint did not train on those patients.** Inspect valid-region counts and empty-region handling before interpreting metrics.
+The fresh pipeline runs `python -m app.train_fresh`, `python -m app.evaluate_fresh`, and `python -m app.audit_fresh`. Its 55-patient held-out test (disjoint from the fresh fine-tuning train and validation sets) reported **mean Dice 0.8294** for the fresh model versus **0.8153** for the upstream baseline; mean HD95 **8.73** versus **8.84** (evaluation units). The reproducibility audit passed **12/12** checks. Potential overlap with the upstream pretrained model’s training cases has **not** been excluded; these results are not independently verified external generalization. The legacy `app.train`/`app.evaluate` commands use the older 60-case workflow.
 
 **Exploratory 60-case Dice (mean):** ET **0.8138**, TC **0.8971**, WT **0.8807**. Original training overlap is unknown; these are **not independent test accuracy**. [Methods, HD95 and limitations](docs/EXPLORATORY_EVALUATION.md).
 
@@ -245,8 +245,10 @@ models/
     inference.py
     pytorch_model.bin
     # other files required by the original pretrained model package
-  finetuned_unetr.pth
-  patient_splits.json     # created/used by training and evaluation
+  finetuned_unetr.pth             # legacy checkpoint
+  finetuned_unetr_fresh.pth       # fresh 368-patient experiment
+  patient_splits.json            # legacy
+  patient_splits_fresh.json      # fresh experiment
 ```
 
 Obtain the pretrained implementation and checkpoint from the authorized original source and retain its license/attribution. The fine-tuned checkpoint must come from your trusted training workflow. **Do not load untrusted PyTorch checkpoint files**; model deserialization can execute unsafe code.
@@ -297,7 +299,7 @@ For an NVIDIA GPU host with a compatible container runtime:
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
 ```
 
-The GPU image is an **optional path**, not covered by the CPU-only CI build. Verify CUDA, driver, dependency, and model compatibility in your own environment before relying on it.
+The GPU image is an **optional path**, not covered by CPU-only CI. The fresh model was **locally verified** on an NVIDIA RTX 2000 Ada GPU: `/health` reported `device: cuda` and validation Dice **0.8698678**; a four-modality BraTS validation case returned HTTP 200 with tumor volumes and a downloadable NIfTI mask. This single-case deployment smoke test does not establish clinical performance or automated GPU CI coverage. See [GPU deployment instructions](docs/GPU_DEPLOYMENT.md).
 
 ## Quality checks and CI
 
@@ -326,7 +328,7 @@ New training runs record the seed, dependency versions, Git revision, dataset sp
 
 ## Attribution and licensing
 
-This project fine-tunes the externally pretrained [MohanadKombar UNETR model](https://huggingface.co/MohanadKombar/brain-tumor-unetr-brats) (upstream model card: MIT) on BraTS 2020 data. **The upstream model and BraTS dataset are not original creations of this repository.** See [Attribution, required BraTS citations, and licensing boundaries](docs/ATTRIBUTION.md). A project-wide license for this repository's own code has not yet been selected; the upstream model's MIT license does not automatically apply to this repository or to the dataset.
+This project fine-tunes the externally pretrained [MohanadKombar UNETR model](https://huggingface.co/MohanadKombar/brain-tumor-unetr-brats) (upstream model card: MIT) on BraTS 2020 data. **The upstream model and BraTS dataset are not original creations of this repository.** See [Attribution, required BraTS citations, and licensing boundaries](docs/ATTRIBUTION.md). Original repository code is available under the [MIT License](LICENSE), to the extent the owner holds the rights to license it. The upstream model and BraTS data retain their own terms.
 
 ## Before making stronger performance claims
 
