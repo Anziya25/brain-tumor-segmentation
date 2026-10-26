@@ -32,7 +32,7 @@ The organizers additionally recommend citing the TCIA TCGA-GBM and TCGA-LGG data
 
 - Original application code, experiment scripts, tests, and deployment integration are distinct from the upstream pretrained model and dataset.
 - Python dependencies (PyTorch, MONAI, FastAPI, and others) retain their own licenses.
-- **No project-wide license has yet been selected for this repository's original code.** Until the owner selects and adds one, do not assume the code is licensed under MIT merely because the upstream model is MIT-licensed.
+- **Original repository code is provided under the [MIT License](../LICENSE), to the extent the owner has the rights to license it.** Third-party code, pretrained weights, and BraTS data retain their own terms.
 - The upstream MIT license does **not** automatically relicense the BraTS dataset or all files in this repository. Retain upstream copyright/license notices if upstream source code is copied or redistributed.
 
 ## Scope of results
