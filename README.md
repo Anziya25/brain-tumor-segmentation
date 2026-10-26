@@ -231,7 +231,7 @@ python -m app.evaluate
 
 Training uses 128³ patches, AdamW, Dice loss, and validation Dice to select the fine-tuned checkpoint. The current configuration runs **15 epochs**; these are source-code settings, not a claim that a published experiment was reproduced.
 
-The fresh pipeline runs `python -m app.train_fresh`, `python -m app.evaluate_fresh`, and `python -m app.audit_fresh`. Its 55-patient held-out test (disjoint from the fresh fine-tuning train and validation sets) reported **mean Dice 0.8294** for the fresh model versus **0.8153** for the upstream baseline; mean HD95 **8.73** versus **8.84** (evaluation units). The reproducibility audit passed **12/12** checks. Potential overlap with the upstream pretrained model’s training cases has **not** been excluded; these results are not independently verified external generalization. The legacy `app.train`/`app.evaluate` commands use the older 60-case workflow.
+The fresh pipeline runs `python -m app.train`, `python -m app.evaluate_fresh`, and `python -m app.audit_fresh`. Its 55-patient held-out test (disjoint from the fresh fine-tuning train and validation sets) reported **mean Dice 0.8294** for the fresh model versus **0.8153** for the upstream baseline; mean HD95 **8.73** versus **8.84** (evaluation units). The reproducibility audit passed **12/12** checks. Potential overlap with the upstream pretrained model’s training cases has **not** been excluded; these results are not independently verified external generalization. The legacy exploratory comparison is documented separately in `docs/EXPLORATORY_EVALUATION.md`; `app.evaluate` retains legacy-checkpoint evaluation functionality.
 
 **Exploratory 60-case Dice (mean):** ET **0.8138**, TC **0.8971**, WT **0.8807**. Original training overlap is unknown; these are **not independent test accuracy**. [Methods, HD95 and limitations](docs/EXPLORATORY_EVALUATION.md).
 
@@ -310,11 +310,11 @@ docker build -t brain-tumor-segmentation:local .
 docker run --rm brain-tumor-segmentation:local python -c "import app.main; print('Docker API import OK')"
 ```
 
-GitHub Actions runs linting, automated tests, CPU Docker build/import smoke testing, and Compose validation on pushes and pull requests. A passing CI run verifies these checks—not end-to-end inference with real model weights, training reproducibility, clinical performance, or GPU deployment.
+**CI verified:** GitHub Actions workflow **#124** completed successfully on `main` at commit `ca3c28c` after PR #13 merged. The workflow runs Ruff linting, automated CPU tests, dependency checks, a CPU Docker build/API-import smoke test, and Compose validation on pushes and pull requests. The local test suite separately passed **53/53 tests**. CI does **not** verify real MRI predictions, NVIDIA GPU execution, clinical performance, or full training reproducibility. NVIDIA GPU inference was validated separately in a local Docker run.
 
 ## Reproducibility and limitations
 
-New training runs record the seed, dependency versions, Git revision, dataset split hash, and pretrained weights hash in `models/finetuned_unetr.run.json` and the checkpoint. After a verified held-out evaluation, `python -m app.evaluate` writes `models/evaluation_report.json` with per-region Dice, HD95, valid counts, and provenance. These local files are not included in Git.
+The fresh run records seed, dependency versions, Git revision, dataset split hash, and pretrained weights hash in `models/finetuned_unetr_fresh.run.json` and the checkpoint. The held-out evaluation via `python -m app.evaluate_fresh` writes `models/evaluation_report_fresh.json` with per-region Dice, HD95, valid counts, and provenance. These local files are not included in Git.
 
 
 - Dataset files, pretrained weights, fine-tuned weights, and split manifest are **not bundled** in Git.
@@ -332,4 +332,4 @@ This project fine-tunes the externally pretrained [MohanadKombar UNETR model](ht
 
 ## Before making stronger performance claims
 
-Recover or establish the original training split, checkpoint/source attribution and license, dataset provenance, and physical spacing verification. A new patient-disjoint evaluation is required for generalization claims. The GPU Docker deployment remains unverified by CI.
+Recover or establish the original training split, checkpoint/source attribution and license, dataset provenance, and physical spacing verification. A new patient-disjoint evaluation is required for generalization claims. The GPU Docker deployment was validated locally on an NVIDIA RTX 2000 Ada; GPU execution is not covered by the CPU-only CI workflow.
