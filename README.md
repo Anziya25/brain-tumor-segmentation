@@ -323,6 +323,11 @@ New training runs record the seed, dependency versions, Git revision, dataset sp
 - Benchmark scripts and synthetic tests must not be presented as validated clinical performance measurements.
 - This project is for technical research and demonstration, **not clinical use**.
 
+
+## Attribution and licensing
+
+This project fine-tunes the externally pretrained [MohanadKombar UNETR model](https://huggingface.co/MohanadKombar/brain-tumor-unetr-brats) (upstream model card: MIT) on BraTS 2020 data. **The upstream model and BraTS dataset are not original creations of this repository.** See [Attribution, required BraTS citations, and licensing boundaries](docs/ATTRIBUTION.md). A project-wide license for this repository's own code has not yet been selected; the upstream model's MIT license does not automatically apply to this repository or to the dataset.
+
 ## Before making stronger performance claims
 
 Recover or establish the original training split, checkpoint/source attribution and license, dataset provenance, and physical spacing verification. A new patient-disjoint evaluation is required for generalization claims. The GPU Docker deployment remains unverified by CI.
