@@ -217,6 +217,18 @@ The **fresh fine-tuning experiment** used **368 complete BraTS 2020 patients** (
 
 Use datasets only under their applicable access and licensing terms. Do not commit patient images or identifiable medical information.
 
+## BraTS2020 data source and required citations
+
+This project uses the **MICCAI BraTS 2020** MRI dataset, originally organized by the Center for Biomedical Image Computing and Analytics (CBICA), University of Pennsylvania. The repository owner obtained the local dataset via **Kaggle**; the exact Kaggle listing and dataset version have not yet been verified. The original challenge's [data description](https://www.med.upenn.edu/cbica/brats2020/data.html) and [data request and citation requirements](https://www.med.upenn.edu/cbica/brats2020/registration.html) are the primary sources for attribution and permitted uses.
+
+The BraTS2020 organizers require citing **all three** of the following publications when using or referring to the challenge dataset:
+
+1. Menze, B. H., Jakab, A., Bauer, S., et al. (2015). **The Multimodal Brain Tumor Image Segmentation Benchmark (BRATS).** *IEEE Transactions on Medical Imaging*, 34(10), 1993–2024. https://doi.org/10.1109/TMI.2014.2377694
+2. Bakas, S., Akbari, H., Sotiras, A., et al. (2017). **Advancing The Cancer Genome Atlas glioma MRI collections with expert segmentation labels and radiomic features.** *Scientific Data*, 4, 170117. https://doi.org/10.1038/sdata.2017.117
+3. Bakas, S., Reyes, M., Jakab, A., et al. (2018). **Identifying the Best Machine Learning Algorithms for Brain Tumor Segmentation, Progression Assessment, and Overall Survival Prediction in the BRATS Challenge.** *arXiv:1811.02629*. https://arxiv.org/abs/1811.02629
+
+The organizers additionally recommend citing the underlying [TCGA-GBM](https://doi.org/10.7937/K9/TCIA.2017.KLXWJJ1Q) and [TCGA-LGG](https://doi.org/10.7937/K9/TCIA.2017.GJQ7R0EF) data records where publication rules permit. Research-use and citation guidance should **not** be interpreted as blanket permission to redistribute medical images or as confirmation of the Kaggle mirror's own terms. No MRI data are distributed in this repository.
+
 ## Training and evaluation
 
 For the **60-case exploratory evaluation** (including measured results, case-level observations, and limitations), see **[Evaluation results](docs/EXPLORATORY_EVALUATION.md)**. The original checkpoint's training patient IDs are unknown, so these are **not held-out test results**.
